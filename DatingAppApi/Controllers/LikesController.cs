@@ -2,6 +2,7 @@
 using DatingAppApi.DTOs;
 using DatingAppApi.Entities;
 using DatingAppApi.Extensions;
+using DatingAppApi.Helpers;
 using DatingAppApi.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -30,7 +31,7 @@ namespace DatingAppApi.Controllers
             }
             else
             {
-                likesRepository.DeleteLile(existingLike);
+                likesRepository.DeleteLiKe(existingLike);
             }
 
             if (await likesRepository.SaveChanges()) return Ok();
@@ -45,9 +46,12 @@ namespace DatingAppApi.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<MemberDto>>> GetUserLikes(string predicate)
+        public async Task<ActionResult<IEnumerable<MemberDto>>> GetUserLikes([FromQuery]LikeParams likeParams)
         {
-            var users = await likesRepository.GetUserLikes(predicate, User.GetUserId());
+            likeParams.UserId = User.GetUserId();
+            var users = await likesRepository.GetUserLikes(likeParams);
+
+            Response.AddPaginationHeader(users);
 
             return Ok(users);   
         }
