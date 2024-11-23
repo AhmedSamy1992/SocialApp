@@ -4,6 +4,7 @@ using DatingAppApi.DTOs;
 using DatingAppApi.Entities;
 using DatingAppApi.Helpers;
 using DatingAppApi.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using System.Linq;
 
 namespace DatingAppApi.Data
@@ -44,9 +45,29 @@ namespace DatingAppApi.Data
 
         }
 
-        public Task<IEnumerable<MessageDto>> GetMessgeThreadAsync(string currentUsername, string RecipientUserName)
+        public async Task<IEnumerable<MessageDto>> GetMessgeThreadAsync(string currentUsername, string RecipientUserName)
         {
-            throw new NotImplementedException();
+            var messages = await dataContext.Messages
+                .Include(x => x.Sender).ThenInclude(x => x.Photos)
+                .Include(x => x.Recipient).ThenInclude(x => x.Photos)
+                .Where(x =>
+                    x.RecipientUserName == currentUsername && x.SenderUserName == RecipientUserName ||
+                    x.SenderUserName == currentUsername && x.RecipientUserName == RecipientUserName)
+                .OrderBy(x => x.MessageSent)
+                .ToListAsync();
+
+            var unReadMessages = messages.Where(x => x.DateRead == null &&
+                 x.RecipientUserName == currentUsername)
+                .ToList();
+
+            if(unReadMessages.Count != 0)
+            {
+                unReadMessages.ForEach(x => x.DateRead = DateTime.UtcNow);
+                await dataContext.SaveChangesAsync();
+            }
+
+            return mapper.Map<IEnumerable<MessageDto>>(messages);
+
         }
 
         public async Task<bool> SaveAllAsync()

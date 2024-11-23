@@ -52,5 +52,12 @@ namespace DatingAppApi.Controllers
             Response.AddPaginationHeader(messages);
             return Ok(messages);
         }
+
+        [HttpGet("thread/{username}")]
+        public async Task<ActionResult<IEnumerable<MessageDto>>> GetMessageThread(string username)
+        {
+            var currentUsername = User.GetUsername();
+            return Ok(await messageRepository.GetMessgeThreadAsync(currentUsername, username));
+        }
     }
 }
