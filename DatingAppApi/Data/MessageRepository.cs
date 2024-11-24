@@ -34,9 +34,13 @@ namespace DatingAppApi.Data
 
             query = messageParams.Container switch
             {
-                "Inbox" => query.Where(x => x.Recipient.UserName == messageParams.Username),
-                "Outbox" => query.Where(x => x.Sender.UserName == messageParams.Username),
-                _ => query.Where(x => x.Recipient.UserName == messageParams.Username && x.DateRead == null)
+                "Inbox" => query.Where(x => x.Recipient.UserName == messageParams.Username 
+                    && x.RecipientDeleted == false),
+                "Outbox" => query.Where(x => x.Sender.UserName == messageParams.Username
+                    && x.SenderDeleted == false),
+                _ => query.Where(x => x.Recipient.UserName == messageParams.Username 
+                    && x.DateRead == null 
+                    && x.RecipientDeleted == false)
             };
 
             var message = query.ProjectTo<MessageDto>(mapper.ConfigurationProvider);
@@ -51,8 +55,12 @@ namespace DatingAppApi.Data
                 .Include(x => x.Sender).ThenInclude(x => x.Photos)
                 .Include(x => x.Recipient).ThenInclude(x => x.Photos)
                 .Where(x =>
-                    x.RecipientUserName == currentUsername && x.SenderUserName == RecipientUserName ||
-                    x.SenderUserName == currentUsername && x.RecipientUserName == RecipientUserName)
+                    x.RecipientUserName == currentUsername 
+                        && x.RecipientDeleted == false 
+                        && x.SenderUserName == RecipientUserName ||
+                    x.SenderUserName == currentUsername 
+                        && x.SenderDeleted == false 
+                        && x.RecipientUserName == RecipientUserName)
                 .OrderBy(x => x.MessageSent)
                 .ToListAsync();
 
