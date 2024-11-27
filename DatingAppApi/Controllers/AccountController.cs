@@ -3,6 +3,7 @@ using DatingAppApi.Data;
 using DatingAppApi.DTOs;
 using DatingAppApi.Entities;
 using DatingAppApi.Interfaces;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
@@ -10,21 +11,27 @@ using System.Text;
 
 namespace DatingAppApi.Controllers
 {
-    public class AccountController(DataContext context, ITokenService tokenService, IMapper mapper) : BaseApiController
+    public class AccountController(UserManager<AppUser> userManager, ITokenService tokenService, IMapper mapper) : BaseApiController
     {
         [HttpPost("register")]
         public async Task<ActionResult<UserDto>> Register(RegisterDto registerDto)
         {
             if (await UserExists(registerDto.Username)) return BadRequest("Username already exists");
 
-            using var hmac = new HMACSHA512();
+            //using var hmac = new HMACSHA512();
 
             registerDto.DateOfBirth = registerDto.DateOfBirth?.Substring(0, 10);
             var user = mapper.Map<AppUser>(registerDto);
 
             user.UserName = registerDto.Username.ToLower();
+
+            var result = await userManager.CreateAsync(user, registerDto.Password);
+            if (!result.Succeeded) return BadRequest(result.Errors);
+
+
+            /*   before using Identity
             user.PasswordHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(registerDto.Password));
-            user.PasswordSalt = hmac.Key;
+            user.PasswordSalt = hmac.Key; */
 
             //var user = new AppUser
             //{
@@ -33,8 +40,9 @@ namespace DatingAppApi.Controllers
             //    PasswordSalt = hmac.Key
             //};
 
+            /*   before using Identity
             context.Users.Add(user);
-            await context.SaveChangesAsync();
+            await context.SaveChangesAsync();*/
 
             return new UserDto
             {
@@ -48,12 +56,13 @@ namespace DatingAppApi.Controllers
         [HttpPost("login")]
         public async Task<ActionResult<UserDto>> Login(LoginDto loginDto)
         {
-            var user = await context.Users
+            var user = await userManager.Users
                 .Include(u => u.Photos)
-                .FirstOrDefaultAsync(u => u.UserName == loginDto.Username);
+                .FirstOrDefaultAsync(u => u.NormalizedUserName == loginDto.Username.ToUpper());
 
-            if (user == null) return Unauthorized("Invalid Username");
+            if (user == null || user.UserName == null) return Unauthorized("Invalid Username");
 
+            /*     before using Identity
             using var hmac = new HMACSHA512(user.PasswordSalt);
 
             var computedHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(loginDto.Password));
@@ -62,6 +71,7 @@ namespace DatingAppApi.Controllers
             {
                 if (computedHash[i] != user.PasswordHash[i]) return Unauthorized("Invalid Password");
             }
+            */
 
             return new UserDto
             {
@@ -75,7 +85,8 @@ namespace DatingAppApi.Controllers
 
         private async Task<Boolean> UserExists(string username)
         {
-            return await context.Users.AnyAsync(u => u.UserName.ToLower() == username.ToLower());
+            return await userManager.Users.AnyAsync(u => u.NormalizedUserName == username.ToUpper());
+            //return await context.Users.AnyAsync(u => u.UserName.ToLower() == username.ToLower());   before using Identity
         }
     }
 }

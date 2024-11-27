@@ -1,13 +1,16 @@
 ﻿using DatingAppApi.Extensions;
+using Microsoft.AspNetCore.Identity;
 
 namespace DatingAppApi.Entities
 {
-    public class AppUser
+    public class AppUser : IdentityUser<int>
     {
+        /*     before using Identity
         public int Id { get; set; }
         public required string UserName { get; set; }
         public byte[] PasswordHash { get; set; } = [];
         public byte[] PasswordSalt { get; set; } = [];
+        */
         public DateOnly  DateOfBirth { get; set; }
         public required string KnownAs { get; set; }
         public DateTime Created { get; set; } = DateTime.UtcNow;
@@ -23,6 +26,7 @@ namespace DatingAppApi.Entities
         public List<UserLike> LikedUsers { get; set; } = [];
         public List<Message> MessagesSent { get; set; } = [];
         public List<Message> MessagesReceived { get; set; } = [];
+        public ICollection<AppUserRole> UserRoles { get; set; } = [];
 
         //public int GetAge() => DateOfBirth.CalculateAge();
     }
