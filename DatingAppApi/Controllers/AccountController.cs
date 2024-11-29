@@ -48,7 +48,7 @@ namespace DatingAppApi.Controllers
             {
                 Username = user.UserName,
                 KnownAs = user.KnownAs,
-                Token = tokenService.CreateToken(user),
+                Token = await tokenService.CreateToken(user),
                 Gender = user.Gender,
             };
         }
@@ -78,7 +78,7 @@ namespace DatingAppApi.Controllers
                 Username = user.UserName,
                 KnownAs = user.KnownAs,
                 Gender = user.Gender,
-                Token = tokenService.CreateToken(user),
+                Token = await tokenService.CreateToken(user),
                 Photourl = user.Photos.FirstOrDefault(p => p.IsMain)?.Url
             };
         }
